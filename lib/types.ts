@@ -26,6 +26,7 @@ export interface ComicProject {
 }
 
 export type ArtStyle = 
+  | 'Comic Illustration'
   | 'Japanese Manga' 
   | 'American Comic' 
   | 'Webtoon' 

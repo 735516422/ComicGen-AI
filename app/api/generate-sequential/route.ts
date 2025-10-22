@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
 
     // 风格映射
     const stylePrompts: Record<string, string> = {
+      "Comic Illustration": "漫画式插画风格，现代漫画插图，细腻线条，柔和色彩，故事性强",
       "Japanese Manga": "日式漫画风格，黑白线条，网点纸效果，动态构图",
       "American Comic": "美式漫画风格，粗线条，鲜艳色彩，超级英雄风格",
       "Webtoon": "条漫风格，韩式网络漫画，数字绘画，柔和色彩",
@@ -195,38 +196,75 @@ ${characterDescription || "根据剧情创作角色"}
 
     const data = await response.json();
     console.log("📦 收到", data.data?.length || 0, "张图片");
+    console.log("📋 原始响应数据结构:", JSON.stringify(data, null, 2).substring(0, 500));
 
     // 处理返回的图片数组
     if (!data.data || data.data.length === 0) {
       throw new Error("No images generated");
     }
 
-    const results = data.data.map((imageData: any, index: number) => {
-      let imageUrl: string;
+    // 处理图片数据，支持部分成功
+    const results: any[] = [];
+    const errors: any[] = [];
 
-      if (imageData.url) {
-        imageUrl = imageData.url;
-      } else if (imageData.b64_image || imageData.b64_json) {
-        const base64Data = imageData.b64_image || imageData.b64_json;
-        imageUrl = `data:image/png;base64,${base64Data}`;
-      } else {
-        throw new Error(`Invalid image data at index ${index}`);
+    data.data.forEach((imageData: any, index: number) => {
+      try {
+        console.log(`🔍 处理第 ${index + 1} 张图片，数据键:`, Object.keys(imageData));
+        
+        let imageUrl: string;
+
+        // 尝试多种可能的字段名
+        if (imageData.url) {
+          imageUrl = imageData.url;
+          console.log(`✅ 第 ${index + 1} 张图片使用 URL`);
+        } else if (imageData.image_url) {
+          imageUrl = imageData.image_url;
+          console.log(`✅ 第 ${index + 1} 张图片使用 image_url`);
+        } else if (imageData.b64_image || imageData.b64_json) {
+          const base64Data = imageData.b64_image || imageData.b64_json;
+          imageUrl = `data:image/png;base64,${base64Data}`;
+          console.log(`✅ 第 ${index + 1} 张图片使用 Base64`);
+        } else if (imageData.data) {
+          // 有些API可能在data字段中返回base64
+          imageUrl = `data:image/png;base64,${imageData.data}`;
+          console.log(`✅ 第 ${index + 1} 张图片使用 data 字段`);
+        } else {
+          // 记录错误但不抛出异常
+          console.error(`❌ 第 ${index + 1} 张图片数据异常:`, JSON.stringify(imageData, null, 2));
+          throw new Error(`Invalid image data format: ${JSON.stringify(Object.keys(imageData))}`);
+        }
+
+        results.push({
+          id: panels[index]?.id || `panel-${index}`,
+          imageUrl,
+          consistencyScore: 0.9 + Math.random() * 0.1,
+          index,
+        });
+        
+      } catch (error: any) {
+        console.error(`⚠️ 第 ${index + 1} 张图片处理失败:`, error.message);
+        errors.push({
+          index,
+          panelId: panels[index]?.id,
+          error: error.message,
+        });
       }
-
-      return {
-        id: panels[index]?.id || `panel-${index}`,
-        imageUrl,
-        consistencyScore: 0.9 + Math.random() * 0.1, // 连环画模式一致性更高
-        index,
-      };
     });
 
-    console.log("✅ 连环画生成成功");
+    const successCount = results.length;
+    const totalCount = data.data.length;
 
+    console.log(`📊 连环画生成结果: ${successCount}/${totalCount} 成功`);
+
+    // 即使部分失败也返回成功的图片
     return NextResponse.json({
-      success: true,
+      success: successCount > 0, // 只要有成功的就返回true
       images: results,
-      message: `Successfully generated ${results.length} sequential images`,
+      message: successCount === totalCount 
+        ? `Successfully generated ${successCount} sequential images`
+        : `Partially generated: ${successCount}/${totalCount} images succeeded`,
+      errors: errors.length > 0 ? errors : undefined,
+      partialSuccess: successCount > 0 && successCount < totalCount,
     });
   } catch (error: any) {
     console.error("❌ 连环画生成错误:", error);

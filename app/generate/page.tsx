@@ -181,8 +181,8 @@ export default function GeneratePage() {
 
       const data = await response.json();
 
-      if (data.success) {
-        // 更新所有画格
+      if (data.success && data.images && data.images.length > 0) {
+        // 更新成功生成的画格
         data.images.forEach((img: any) => {
           updatePanel(img.id, {
             imageUrl: img.imageUrl,
@@ -192,12 +192,30 @@ export default function GeneratePage() {
           });
         });
 
-        toast({
-          title: '✅ 连环画生成成功',
-          description: `已生成 ${data.images.length} 张风格一致的图片`,
+        // 将未成功生成的画格恢复为pending状态
+        panelsToGenerate.forEach(panel => {
+          const isGenerated = data.images.some((img: any) => img.id === panel.id);
+          if (!isGenerated) {
+            updatePanel(panel.id, { status: 'pending', progress: 0 });
+          }
         });
+
+        // 根据是否部分成功给出不同提示
+        if (data.partialSuccess) {
+          const failedCount = panelsToGenerate.length - data.images.length;
+          toast({
+            title: '⚠️ 部分生成成功',
+            description: `成功生成 ${data.images.length} 张图片，${failedCount} 张失败。可以重试失败的画格。`,
+            variant: 'default',
+          });
+        } else {
+          toast({
+            title: '✅ 连环画生成成功',
+            description: `已生成 ${data.images.length} 张风格一致的图片`,
+          });
+        }
       } else {
-        throw new Error(data.error || '生成失败');
+        throw new Error(data.error || data.message || '生成失败');
       }
     } catch (error: any) {
       console.error('连环画生成失败:', error);
@@ -215,6 +233,7 @@ export default function GeneratePage() {
         variant: 'destructive',
       });
     } finally {
+      // 确保加载状态被清除
       setIsGenerating(false);
     }
   };

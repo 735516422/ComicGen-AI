@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Build prompt based on art style
     const stylePrompts: Record<string, string> = {
+      'Comic Illustration': '漫画式插画风格，现代漫画插图，细腻线条，柔和色彩，故事性强，画面精致，插画质感，叙事性构图',
       'Japanese Manga': '漫画风格，日式漫画，黑白线条，网点纸效果，动态构图，经典少年漫画风格',
       'American Comic': '美式漫画风格，粗线条，鲜艳色彩，超级英雄风格，戏剧化构图，强烈对比',
       'Webtoon': '条漫风格，韩式网络漫画，数字绘画，柔和色彩，清新画风，垂直滚动格式',

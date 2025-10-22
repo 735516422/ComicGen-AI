@@ -25,7 +25,7 @@ export default function HomePage() {
 
   const [formData, setFormData] = useState({
     theme: "",
-    artStyle: "Japanese Manga",
+    artStyle: "Comic Illustration",
     numPanels: 4,
     characterDescription: "",
     referenceImage: null as File | null,
@@ -125,84 +125,69 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark">
+    <div className="h-screen overflow-hidden bg-background-light dark:bg-background-dark">
       {/* Header - Fixed */}
-      <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-8 md:px-16 lg:px-24 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
-        <div className="flex items-center gap-2 text-text-dark dark:text-white">
-          <div className="size-8 text-primary">
-            <svg
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+      <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-8 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 text-primary">
+            <svg fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1.5-6.5h3c.83 0 1.5-.67 1.5-1.5v-3c0-.83-.67-1.5-1.5-1.5h-3c-.83 0-1.5.67-1.5 1.5v3c0 .83.67 1.5 1.5 1.5zm1.5-4.5c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM5 16.5c0-.83.67-1.5 1.5-1.5h11c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-11c-.83 0-1.5-.67-1.5-1.5z" />
             </svg>
           </div>
-          <h2 className="text-text-dark dark:text-white text-2xl font-bold tracking-tight">
-            ComicGen AI
-          </h2>
+          <h2 className="text-2xl font-bold">ComicGen AI</h2>
         </div>
       </header>
 
-      {/* Main Content - Add margin top to account for fixed header */}
-      <main className="flex-1 flex justify-center items-center px-4 py-4 mt-16">
+      {/* Main Content */}
+      <main className="h-full flex items-center justify-center px-4 pt-20 pb-6 overflow-y-auto">
         <div className="w-full max-w-3xl">
           {/* Hero Section */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-semibold mb-3">
-              <Sparkles className="h-4 w-4" />
-              <span>AI 驱动的漫画创作工具</span>
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-semibold mb-2">
+              <Sparkles className="w-4 h-4" />
+              AI 驱动的漫画创作工具
             </div>
-            <h1 className="text-text-dark dark:text-white text-3xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tighter mb-2">
-              几秒钟创作你的漫画！
-            </h1>
-            <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+            <h1 className="text-4xl font-black mb-1.5">几秒钟创作你的漫画！</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
               输入主题，AI 自动生成剧本和精美画面
             </p>
           </div>
 
           {/* Form Card */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700">
-
-            <div className="space-y-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-5 border border-gray-200 dark:border-gray-700">
+            <div className="space-y-3.5">
               {/* Theme Input */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="theme" className="text-base font-semibold flex items-center gap-2">
-                  <span className="text-lg">✨</span>
-                  主题/题材
-                  <span className="text-red-500">*</span>
+              <div>
+                <Label htmlFor="theme" className="flex items-center gap-1.5 mb-2">
+                  ✨ 主题/题材 <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="theme"
                   placeholder="例如：程序员修bug的日常、猫咪的奇幻冒险..."
                   value={formData.theme}
-                  onChange={(e) =>
-                    setFormData({ ...formData, theme: e.target.value })
-                  }
-                  className="h-12 text-base"
+                  onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
+                  className="h-11"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  💡 提示：描述越详细，生成的漫画越精彩
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+                  💡 描述越详细，生成的漫画越精彩
                 </p>
               </div>
 
               {/* Art Style and Number of Panels */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="artStyle" className="text-base font-semibold flex items-center gap-2">
-                    <span className="text-lg">🎨</span>
-                    漫画风格
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="artStyle" className="flex items-center gap-1.5 mb-2">
+                    🎨 漫画风格
                   </Label>
                   <Select
                     value={formData.artStyle}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, artStyle: value })
-                    }
+                    onValueChange={(value) => setFormData({ ...formData, artStyle: value })}
                   >
-                    <SelectTrigger id="artStyle" className="h-12">
+                    <SelectTrigger id="artStyle" className="h-11">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Comic Illustration">🎭 漫画式插画风</SelectItem>
                       <SelectItem value="Japanese Manga">🇯🇵 日式漫画</SelectItem>
                       <SelectItem value="American Comic">🇺🇸 美式漫画</SelectItem>
                       <SelectItem value="Webtoon">📱 条漫</SelectItem>
@@ -221,10 +206,9 @@ export default function HomePage() {
                   </Select>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="numPanels" className="text-base font-semibold flex items-center gap-2">
-                    <span className="text-lg">📊</span>
-                    画格数量
+                <div>
+                  <Label htmlFor="numPanels" className="flex items-center gap-1.5 mb-2">
+                    📊 画格数量
                   </Label>
                   <Input
                     id="numPanels"
@@ -232,22 +216,16 @@ export default function HomePage() {
                     min="1"
                     max="12"
                     value={formData.numPanels}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        numPanels: parseInt(e.target.value) || 4,
-                      })
-                    }
-                    className="h-12 text-base"
+                    onChange={(e) => setFormData({ ...formData, numPanels: parseInt(e.target.value) || 4 })}
+                    className="h-11"
                   />
                 </div>
               </div>
 
               {/* Image Ratio Selection */}
-              <div className="flex flex-col gap-2">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <span className="text-lg">📐</span>
-                  图片比例
+              <div>
+                <Label className="flex items-center gap-1.5 mb-2">
+                  📐 图片比例
                 </Label>
                 <div className="grid grid-cols-4 gap-2">
                   {[
@@ -259,22 +237,15 @@ export default function HomePage() {
                     <button
                       key={ratio.value}
                       type="button"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          imageRatio: ratio.value as any,
-                        })
-                      }
-                      className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all ${
+                      onClick={() => setFormData({ ...formData, imageRatio: ratio.value as any })}
+                      className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition ${
                         formData.imageRatio === ratio.value
-                          ? "border-primary bg-primary/10 text-primary"
+                          ? "border-primary bg-primary/10"
                           : "border-gray-200 dark:border-gray-700 hover:border-primary/50"
                       }`}
                     >
-                      <span className="text-xl mb-0.5">{ratio.icon}</span>
-                      <span className="text-xs font-semibold text-center">
-                        {ratio.label}
-                      </span>
+                      <span className="text-xl">{ratio.icon}</span>
+                      <span className="text-xs font-semibold">{ratio.label}</span>
                     </button>
                   ))}
                 </div>
@@ -285,76 +256,47 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center justify-between w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
+                  className="flex items-center justify-between w-full p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                 >
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    ⚙️ 高级配置
-                  </span>
-                  {showAdvanced ? (
-                    <ChevronUp className="h-4 w-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  )}
+                  <span className="text-sm font-semibold">⚙️ 高级配置</span>
+                  {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
 
                 {/* Advanced Settings Content */}
                 {showAdvanced && (
-                  <div className="mt-4 space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="mt-3 space-y-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                     {/* Character Description */}
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="characterDescription" className="text-sm font-semibold flex items-center gap-2">
-                        <span>👤</span>
-                        角色描述
-                        <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">(可选)</span>
+                    <div>
+                      <Label htmlFor="characterDescription" className="flex items-center gap-1.5 mb-2">
+                        👤 角色描述 <span className="text-xs text-gray-500">(可选)</span>
                       </Label>
                       <Textarea
                         id="characterDescription"
                         placeholder="例如：主角是一个戴眼镜的程序员，配角是一只会说话的橡皮鸭..."
                         value={formData.characterDescription}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            characterDescription: e.target.value,
-                          })
-                        }
-                        className="min-h-[80px] text-sm"
+                        onChange={(e) => setFormData({ ...formData, characterDescription: e.target.value })}
+                        className="min-h-[70px] text-sm"
                       />
                     </div>
 
                     {/* Reference Image Upload */}
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="referenceImage" className="text-sm font-semibold flex items-center gap-2">
-                        <span>📸</span>
-                        参考图片
-                        <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">(可选)</span>
+                    <div>
+                      <Label htmlFor="referenceImage" className="flex items-center gap-1.5 mb-2">
+                        📸 参考图片 <span className="text-xs text-gray-500">(可选)</span>
                       </Label>
                       <label
                         htmlFor="referenceImage"
-                        className="flex flex-col items-center justify-center w-full h-28 border-2 border-secondary/30 dark:border-secondary/40 border-dashed rounded-lg cursor-pointer bg-secondary/5 hover:bg-secondary/10 transition-all"
+                        className="flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/5 hover:bg-secondary/10 transition"
                       >
-                        <div className="flex flex-col items-center justify-center">
-                          <Upload className="w-8 h-8 mb-2 text-secondary" />
-                          <p className="text-xs text-gray-700 dark:text-gray-300">
-                            <span className="font-semibold">点击上传</span>
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            支持 PNG, JPG 或 GIF (最大 5MB)
-                          </p>
-                          {formData.referenceImage && (
-                            <div className="mt-2 px-3 py-1 bg-primary rounded-md">
-                              <p className="text-xs text-text-dark font-medium">
-                                ✓ {formData.referenceImage.name}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                        <input
-                          id="referenceImage"
-                          type="file"
-                          className="hidden"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                        />
+                        <Upload className="w-7 h-7 mb-1.5 text-secondary" />
+                        <p className="text-xs font-semibold">点击上传</p>
+                        <p className="text-xs text-gray-500">PNG, JPG, GIF (最大 5MB)</p>
+                        {formData.referenceImage && (
+                          <div className="mt-1.5 px-2 py-0.5 bg-primary rounded text-xs font-medium">
+                            ✓ {formData.referenceImage.name}
+                          </div>
+                        )}
+                        <input id="referenceImage" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
                       </label>
                     </div>
                   </div>
@@ -365,22 +307,22 @@ export default function HomePage() {
               <Button
                 onClick={handleGenerateScript}
                 disabled={isGenerating || !formData.theme}
-                className="w-full h-12 text-base font-bold shadow-lg hover:shadow-xl transition-all mt-2"
+                className="w-full h-11 font-bold shadow-lg hover:shadow-xl transition mt-1"
                 size="lg"
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    <span>AI 正在创作中...</span>
+                    <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                    AI 正在创作中...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 h-5 w-5" />
-                    <span>🎬 开始创作漫画</span>
+                    <Sparkles className="mr-2 w-5 h-5" />
+                    🎬 开始创作漫画
                   </>
                 )}
               </Button>
-              <p className="text-center text-xs text-gray-500 dark:text-gray-400 -mt-1">
+              <p className="text-center text-xs text-gray-500 dark:text-gray-400">
                 ⚡ 通常只需 10-30 秒即可生成完整剧本
               </p>
             </div>
