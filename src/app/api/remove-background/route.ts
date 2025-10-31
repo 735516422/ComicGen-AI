@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // 调用豆包 API
     const data = await callDoubaoAPI({
-      prompt: '去除图片背景，保留主体，背景透明',
+      prompt: '抠出主体，去除背景，背景透明，主体边缘清晰，无残留背景，高清输出',
       image,
       task: 'remove-background', // 任务类型标识
     })

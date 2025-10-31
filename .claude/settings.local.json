@@ -6,7 +6,8 @@
       "Bash(mkdir:*)",
       "Bash(npm create:*)",
       "Bash(npm install:*)",
-      "Bash(npx tailwindcss init:*)"
+      "Bash(npx tailwindcss init:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

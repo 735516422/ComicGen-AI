@@ -42,6 +42,7 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
   const [isLoadingImage, setIsLoadingImage] = useState(false)
   const imageLoadedRef = useRef(false)
   const [zoom, setZoom] = useState(1)
+  const zoomRef = useRef(1)  // 用于在滚轮事件中获取最新的zoom值
   const containerRef = useRef<HTMLDivElement>(null)
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 })
 
@@ -84,8 +85,12 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
     const fabricCanvas = new fabric.Canvas(canvasRef.current, {
       width: 800, // 初始大小，加载图片后会调整
       height: 600,
-      backgroundColor: '#ffffff',
+      backgroundColor: 'transparent', // 透明背景
       preserveObjectStacking: true,
+      // 禁用画布拖动，只允许对象拖动
+      allowTouchScrolling: false,
+      // 确保选择模式正常工作
+      selection: true,
     })
 
     fabricCanvasRef.current = fabricCanvas
@@ -103,8 +108,44 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
     })
     fabricCanvas.on('object:removed', () => updateLayers(fabricCanvas))
 
+    // 添加鼠标滚轮缩放功能 (Ctrl + 滚轮)
+    const handleWheel = (opt: any) => {
+      const evt = opt.e
+      // 只在按住 Ctrl 键时响应滚轮
+      if (evt.ctrlKey) {
+        evt.preventDefault()
+        evt.stopPropagation()
+        
+        const delta = evt.deltaY
+        let newZoom = fabricCanvas.getZoom()
+        
+        // 根据滚轮方向调整缩放
+        newZoom *= 0.999 ** delta
+        
+        // 限制缩放范围 10% - 500%
+        if (newZoom > 5) newZoom = 5
+        if (newZoom < 0.1) newZoom = 0.1
+        
+        // 以鼠标位置为中心进行缩放
+        fabricCanvas.zoomToPoint(
+          new fabric.Point(evt.offsetX, evt.offsetY),
+          newZoom
+        )
+        
+        // 更新缩放状态
+        setZoom(newZoom)
+        zoomRef.current = newZoom  // 同步更新ref
+        
+        opt.e.preventDefault()
+        opt.e.stopPropagation()
+      }
+    }
+    
+    fabricCanvas.on('mouse:wheel', handleWheel)
+
     return () => {
       console.log('销毁画布')
+      fabricCanvas.off('mouse:wheel', handleWheel)
       fabricCanvas.dispose()
       fabricCanvasRef.current = null
     }
@@ -164,20 +205,24 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
         setCanvasSize({ width: imgWidth, height: imgHeight })
         console.log(`画布大小设置为图片原始尺寸: ${imgWidth} x ${imgHeight}`)
         
-        // 图片不缩放，完全填充画布
+        // 将图片设置为画布背景图，使其成为画布的一部分
+        // 这样导出时图片就是画布本身，不会有额外的白色背景
         img.set({
           left: 0,
           top: 0,
-          selectable: true,
+          selectable: false,  // 不可选择
+          evented: false,     // 不响应事件
           scaleX: 1,
           scaleY: 1,
         })
         const imgWithData = img as FabricObjectWithData
         imgWithData.data = {
           id: generateId(),
-          name: '背景图片',
+          name: '主图层（背景）',
         }
         canvas.add(img)
+        // 将图片移动到最底层，确保其他元素在上方
+        canvas.sendObjectToBack(img)
         canvas.renderAll()
 
         addLayer({
@@ -185,7 +230,7 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
           name: imgWithData.data.name!,
           type: 'image',
           visible: true,
-          locked: false,
+          locked: true,  // 标记为已锁定
           object: img,
         })
 
@@ -194,7 +239,7 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
         setHistory([json])
         setHistoryIndex(0)
         
-        // 自动适应容器大小
+        // 自动适应容器大小并居中
         setTimeout(() => {
           if (!containerRef.current) return
           
@@ -207,10 +252,24 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
           const newZoom = Math.min(scaleX, scaleY, 1)
           
           setZoom(newZoom)
-          if (canvasRef.current) {
-            canvasRef.current.style.transform = `scale(${newZoom})`
-            canvasRef.current.style.transformOrigin = 'center center'
-          }
+          zoomRef.current = newZoom  // 同步更新ref
+          
+          // 设置缩放
+          canvas.setZoom(newZoom)
+          
+          // 计算居中位置
+          const fullContainerWidth = container.clientWidth
+          const fullContainerHeight = container.clientHeight
+          const canvasWidth = imgWidth * newZoom
+          const canvasHeight = imgHeight * newZoom
+          
+          // 计算使画布居中的偏移量
+          const left = (fullContainerWidth - canvasWidth) / 2
+          const top = (fullContainerHeight - canvasHeight) / 2
+          
+          // 设置视口变换以居中画布
+          canvas.setViewportTransform([newZoom, 0, 0, newZoom, left, top])
+          canvas.renderAll()
         }, 100)
         
       } catch (error) {
@@ -380,12 +439,19 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
 
   const selectLayer = (layer: Layer) => {
     if (!canvas) return
+    // 如果是主图层（背景），不允许选中
+    if (layer.locked) return
     canvas.setActiveObject(layer.object)
     canvas.renderAll()
   }
 
   const deleteLayer = (layer: Layer) => {
     if (!canvas) return
+    // 保护主图层（背景），不允许删除
+    if (layer.locked || layer.name.includes('主图层')) {
+      alert('主图层（背景）无法删除')
+      return
+    }
     canvas.remove(layer.object)
     canvas.renderAll()
     saveHistory(canvas)
@@ -393,6 +459,8 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
 
   const moveLayerUp = (layer: Layer) => {
     if (!canvas) return
+    // 保护主图层，不允许移动
+    if (layer.locked || layer.name.includes('主图层')) return
     canvas.bringObjectForward(layer.object)
     canvas.renderAll()
     updateLayers(canvas)
@@ -400,19 +468,36 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
 
   const moveLayerDown = (layer: Layer) => {
     if (!canvas) return
+    // 保护主图层，不允许移动
+    if (layer.locked || layer.name.includes('主图层')) return
     canvas.sendObjectBackwards(layer.object)
     canvas.renderAll()
     updateLayers(canvas)
   }
 
-  // 缩放控制
+  // 缩放控制 - 使用Fabric.js原生缩放并居中
   const handleZoom = useCallback((newZoom: number) => {
-    if (!canvas || !canvasRef.current) return
+    if (!canvas || !containerRef.current) return
     setZoom(newZoom)
+    zoomRef.current = newZoom  // 同步更新ref
     
-    const canvasElement = canvasRef.current
-    canvasElement.style.transform = `scale(${newZoom})`
-    canvasElement.style.transformOrigin = 'center center'
+    // 设置缩放
+    canvas.setZoom(newZoom)
+    
+    // 计算居中位置
+    const container = containerRef.current
+    const containerWidth = container.clientWidth
+    const containerHeight = container.clientHeight
+    const canvasWidth = canvas.width! * newZoom
+    const canvasHeight = canvas.height! * newZoom
+    
+    // 计算使画布居中的偏移量
+    const left = (containerWidth - canvasWidth) / 2
+    const top = (containerHeight - canvasHeight) / 2
+    
+    // 设置视口变换以居中画布
+    canvas.setViewportTransform([newZoom, 0, 0, newZoom, left, top])
+    canvas.renderAll()
   }, [canvas])
 
   // 放大
@@ -450,11 +535,23 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
   // 导出图片
   const exportImage = () => {
     if (!canvas) return
+    
+    // 临时保存原背景色
+    const originalBgColor = canvas.backgroundColor
+    
+    // 导出时将背景设为透明，这样只包含图片内容和编辑元素
+    canvas.backgroundColor = 'transparent'
+    canvas.renderAll()
+    
     const dataURL = canvas.toDataURL({
       format: 'png',
       quality: 1,
       multiplier: 1,
     })
+    
+    // 恢复原背景色
+    canvas.backgroundColor = originalBgColor
+    canvas.renderAll()
     
     // 下载
     const link = document.createElement('a')
@@ -634,6 +731,9 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
             >
               1:1
             </button>
+            <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/30 rounded text-blue-400 text-xs">
+              💡 Ctrl + 滚轮缩放
+            </div>
           </div>
 
           <button
@@ -657,9 +757,7 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
               </div>
             </div>
           )}
-          <div className="shadow-2xl transition-transform duration-200">
-            <canvas ref={canvasRef} />
-          </div>
+          <canvas ref={canvasRef} className="shadow-2xl" />
         </div>
       </div>
 
@@ -675,77 +773,102 @@ export default function AdvancedImageEditor({ initialImage, onSave }: AdvancedIm
               暂无图层
             </div>
           ) : (
-            [...layers].reverse().map((layer, index) => (
-              <div
-                key={layer.id}
-                className="bg-gray-700 rounded p-3 hover:bg-gray-600 cursor-pointer"
-                onClick={() => selectLayer(layer)}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium truncate flex-1">{layer.name}</span>
-                  <span className="text-xs text-gray-400 ml-2">
-                    {layer.type === 'image' ? '图' : layer.type === 'text' ? '文' : '形'}
-                  </span>
+            [...layers].reverse().map((layer, index) => {
+              const isMainLayer = layer.locked && layer.name.includes('主图层')
+              return (
+                <div
+                  key={layer.id}
+                  className={`rounded p-3 ${
+                    isMainLayer 
+                      ? 'bg-blue-900/30 border border-blue-500/50' 
+                      : 'bg-gray-700 hover:bg-gray-600 cursor-pointer'
+                  }`}
+                  onClick={() => selectLayer(layer)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {isMainLayer && (
+                        <span className="text-blue-400 text-xs flex-shrink-0">🖼️</span>
+                      )}
+                      <span className="font-medium truncate">{layer.name}</span>
+                    </div>
+                    <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                      {layer.type === 'image' ? '图' : layer.type === 'text' ? '文' : '形'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleLayerVisibility(layer)
+                      }}
+                      className="p-1 hover:bg-gray-500 rounded text-xs"
+                      title={layer.visible ? '隐藏' : '显示'}
+                    >
+                      {layer.visible ? '👁' : '👁‍🗨'}
+                    </button>
+
+                    {/* 主图层的锁定按钮禁用 */}
+                    {!isMainLayer && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleLayerLock(layer)
+                        }}
+                        className="p-1 hover:bg-gray-500 rounded text-xs"
+                        title={layer.locked ? '解锁' : '锁定'}
+                      >
+                        {layer.locked ? '🔒' : '🔓'}
+                      </button>
+                    )}
+
+                    {/* 主图层不显示移动按钮 */}
+                    {!isMainLayer && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            moveLayerUp(layer)
+                          }}
+                          className="p-1 hover:bg-gray-500 rounded text-xs"
+                          title="上移"
+                        >
+                          ↑
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            moveLayerDown(layer)
+                          }}
+                          className="p-1 hover:bg-gray-500 rounded text-xs"
+                          title="下移"
+                        >
+                          ↓
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteLayer(layer)
+                          }}
+                          className="p-1 hover:bg-red-600 rounded text-xs ml-auto"
+                          title="删除"
+                        >
+                          🗑
+                        </button>
+                      </>
+                    )}
+                    
+                    {/* 主图层显示固定标识 */}
+                    {isMainLayer && (
+                      <span className="text-xs text-blue-400 ml-auto">固定</span>
+                    )}
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleLayerVisibility(layer)
-                    }}
-                    className="p-1 hover:bg-gray-500 rounded text-xs"
-                    title={layer.visible ? '隐藏' : '显示'}
-                  >
-                    {layer.visible ? '👁' : '👁‍🗨'}
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleLayerLock(layer)
-                    }}
-                    className="p-1 hover:bg-gray-500 rounded text-xs"
-                    title={layer.locked ? '解锁' : '锁定'}
-                  >
-                    {layer.locked ? '🔒' : '🔓'}
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      moveLayerUp(layer)
-                    }}
-                    className="p-1 hover:bg-gray-500 rounded text-xs"
-                    title="上移"
-                  >
-                    ↑
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      moveLayerDown(layer)
-                    }}
-                    className="p-1 hover:bg-gray-500 rounded text-xs"
-                    title="下移"
-                  >
-                    ↓
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteLayer(layer)
-                    }}
-                    className="p-1 hover:bg-red-600 rounded text-xs ml-auto"
-                    title="删除"
-                  >
-                    🗑
-                  </button>
-                </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </div>

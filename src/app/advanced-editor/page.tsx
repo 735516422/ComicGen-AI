@@ -8,7 +8,7 @@ import AdvancedImageEditor from '@/components/AdvancedImageEditor'
 function EditorContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [imageUrl, setImageUrl] = useState<string | null>(searchParams.get('image'))
 
   useEffect(() => {
     // 从 URL 参数获取图片
@@ -21,7 +21,17 @@ function EditorContent() {
     const image = urlImage || sessionImage
 
     if (image) {
-      setImageUrl(decodeURIComponent(image))
+      const decodedImage = decodeURIComponent(image)
+      setImageUrl(decodedImage)
+      
+      // 如果URL中没有图片参数，但sessionStorage有，更新URL
+      if (!urlImage && sessionImage) {
+        const newUrl = `/advanced-editor?image=${encodeURIComponent(sessionImage)}`
+        window.history.replaceState(null, '', newUrl)
+      }
+      
+      // 保存到sessionStorage，确保刷新后仍然可用
+      sessionStorage.setItem('editImage', decodedImage)
     } else {
       // 如果没有图片，提示用户
       alert('未找到图片，请先生成图片')
