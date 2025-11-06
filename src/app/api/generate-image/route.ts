@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import {
-  callDoubaoAPI,
+  callDoubaoAPIPNG,
   handleDoubaoResponse,
   handleAPIError,
   validateRequired,
@@ -29,8 +29,8 @@ export async function POST(request: NextRequest) {
       image = referenceImage
     }
 
-    // 调用豆包 API
-    const data = await callDoubaoAPI({
+    // 调用豆包 API - 强制返回PNG格式
+    const data = await callDoubaoAPIPNG({
       prompt,
       image,
     })

@@ -11,12 +11,22 @@ export const DOUBAO_MODEL = 'doubao-seedream-4-0-250828'
 // 请求超时时间（毫秒）
 export const API_TIMEOUT = 180000 // 3分钟
 
-// 默认配置
+// 默认配置 - 强制返回PNG格式
 export const DEFAULT_IMAGE_CONFIG = {
   n: 1,
   size: '1024x1024' as const,
   quality: 'hd' as const,
-  response_format: 'url' as const,
+  response_format: 'b64_json' as const, // 使用base64格式，确保PNG
+  style: 'natural' as const,
+  watermark: false,
+}
+
+// PNG格式专用配置
+export const PNG_IMAGE_CONFIG = {
+  n: 1,
+  size: '1024x1024' as const,
+  quality: 'hd' as const,
+  response_format: 'b64_json' as const, // base64格式，确保PNG
   style: 'natural' as const,
   watermark: false,
 }

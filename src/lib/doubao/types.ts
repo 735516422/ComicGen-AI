@@ -33,6 +33,7 @@ export interface DoubaoAPIResponse {
 export interface SuccessResponse {
   success: true
   imageUrl: string
+  format?: string // 图片格式，如 'png'
 }
 
 // 统一的错误响应
